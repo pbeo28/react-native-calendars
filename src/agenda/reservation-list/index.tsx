@@ -7,7 +7,7 @@ import {ActivityIndicator, View, FlatList, StyleProp, ViewStyle, TextStyle, Nati
 
 import {extractReservationProps} from '../../componentUpdater';
 import {sameDate} from '../../dateutils';
-import {toMarkingFormat} from '../../interface';
+import {parseDate, toMarkingFormat} from '../../interface';
 import styleConstructor from './style';
 import Reservation, {ReservationProps} from './reservation';
 import {AgendaEntry, AgendaSchedule, DayAgenda} from '../../types';
@@ -61,7 +61,7 @@ class ReservationList extends Component<ReservationListProps, State> {
     selectedDay: PropTypes.instanceOf(XDate),
     topDay: PropTypes.instanceOf(XDate),
     onDayChange: PropTypes.func,
-    
+
     showOnlySelectedDayItems: PropTypes.bool,
     renderEmptyData: PropTypes.func,
 
@@ -75,7 +75,7 @@ class ReservationList extends Component<ReservationListProps, State> {
     onRefresh: PropTypes.func,
     reservationsKeyExtractor: PropTypes.func
   };
-  
+
   static defaultProps = {
     refreshing: false,
     selectedDay: new XDate(true)
@@ -125,7 +125,7 @@ class ReservationList extends Component<ReservationListProps, State> {
   updateReservations(props: ReservationListProps) {
     const {selectedDay, showOnlySelectedDayItems} = props;
     const reservations = this.getReservations(props);
-    
+
     if (!showOnlySelectedDayItems && this.list && !sameDate(selectedDay, this.selectedDay)) {
       let scrollPosition = 0;
       for (let i = 0; i < reservations.scrollPosition; i++) {
@@ -142,7 +142,7 @@ class ReservationList extends Component<ReservationListProps, State> {
   getReservationsForDay(iterator: XDate, props: ReservationListProps) {
     const day = iterator.clone();
     const res = props.items?.[toMarkingFormat(day)];
-    
+
     if (res && res.length) {
       return res.map((reservation: AgendaEntry, i: number) => {
         return {
@@ -163,7 +163,7 @@ class ReservationList extends Component<ReservationListProps, State> {
 
   getReservations(props: ReservationListProps) {
     const {selectedDay, showOnlySelectedDayItems} = props;
-    
+
     if (!props.items || !selectedDay) {
       return {reservations: [], scrollPosition: 0};
     }
@@ -256,13 +256,50 @@ class ReservationList extends Component<ReservationListProps, State> {
     );
   };
 
+
+
   keyExtractor = (item: DayAgenda, index: number) => {
     return this.props.reservationsKeyExtractor?.(item, index) || `${item?.reservation?.day}${index}`;
   }
 
+  _onRefresh = () => {
+    let h = 0;
+    let scrollPosition = 0;
+    const selectedDay = this.props.selectedDay.clone();
+    const iterator = parseDate(this.props.selectedDay.clone().getTime()-3600*24*10*1000);
+    let reservations = [];
+    for (let i = 0; i < 10; i++) {
+      const res = this.getReservationsForDay(iterator, this.props);
+      if (res) {
+        reservations = reservations.concat(res);
+      }
+      iterator.addDays(1);
+    }
+    scrollPosition = reservations.length;
+    for (let i = 10; i < 30; i++) {
+      const res = this.getReservationsForDay(iterator, this.props);
+      if (res) {
+        reservations = reservations.concat(res);
+      }
+      iterator.addDays(1);
+    }
+    this.setState({
+      reservations
+    }, () => {
+      setTimeout(() => {
+        let h = 0;
+        for (let i = 0; i < scrollPosition; i++) {
+          h += this.heights[i] || 0;
+        }
+        this.list.scrollToOffset({offset: h, animated: false});
+        this.props.onDayChange(selectedDay, false);
+      }, 100);
+    });
+  }
+
   render() {
     const {items, selectedDay, theme, style} = this.props;
-    
+
     if (!items || selectedDay && !items[toMarkingFormat(selectedDay)]) {
       if (isFunction(this.props.renderEmptyData)) {
         return this.props.renderEmptyData?.();
@@ -284,7 +321,7 @@ class ReservationList extends Component<ReservationListProps, State> {
         onScroll={this.onScroll}
         refreshControl={this.props.refreshControl}
         refreshing={this.props.refreshing}
-        onRefresh={this.props.onRefresh}
+        onRefresh={this._onRefresh}
         onScrollBeginDrag={this.props.onScrollBeginDrag}
         onScrollEndDrag={this.props.onScrollEndDrag}
         onMomentumScrollBegin={this.props.onMomentumScrollBegin}

@@ -322,9 +322,9 @@ export default class Agenda extends Component<AgendaProps, State> {
     }
   };
 
-  onDayChange = (day: XDate) => {
+  onDayChange = (day: XDate,f= true) => {
     const withAnimation = sameMonth(day, this.state.selectedDay);
-    this.calendar?.current?.scrollToDay(day, this.calendarOffset(), withAnimation);
+    this.calendar?.current?.scrollToDay(day, this.calendarOffset(), withAnimation && f);
 
     this.setState({selectedDay: day});
 
