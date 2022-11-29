@@ -43,6 +43,8 @@ export type ReservationListProps = ReservationProps & {
   refreshControl?: JSX.Element;
   /** Set this true while waiting for new data from a refresh */
   refreshing?: boolean;
+
+  estimatedItemSize?: number;
   /** If provided, a standard RefreshControl will be added for "Pull to Refresh" functionality. Make sure to also set the refreshing prop correctly */
   onRefresh?: () => void;
   /** Extractor for underlying FlatList. Ensure that this is unique per item, or else scrolling may have duplicated and / or missing items.  */
@@ -73,6 +75,7 @@ class ReservationList extends Component<ReservationListProps, State> {
     onMomentumScrollEnd: PropTypes.func,
     refreshControl: PropTypes.element,
     refreshing: PropTypes.bool,
+    estimatedItemSize: PropTypes.number,
     onRefresh: PropTypes.func,
     reservationsKeyExtractor: PropTypes.func
   };
@@ -312,7 +315,7 @@ class ReservationList extends Component<ReservationListProps, State> {
         data={this.state.reservations}
         renderItem={this.renderRow}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={200}
+        estimatedItemSize={this.props.estimatedItemSize}
         onMoveShouldSetResponderCapture={this.onMoveShouldSetResponderCapture}
         onScroll={this.onScroll}
         refreshControl={this.props.refreshControl}
