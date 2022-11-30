@@ -16,8 +16,8 @@ import { FlashList } from '@shopify/flash-list';
 
 export type ReservationListProps = ReservationProps & {
   /** the list of items that have to be displayed in agenda. If you want to render item as empty date
-  the value of date key kas to be an empty array []. If there exists no value for date key it is
-  considered that the date in question is not yet loaded */
+   the value of date key kas to be an empty array []. If there exists no value for date key it is
+   considered that the date in question is not yet loaded */
   items?: AgendaSchedule;
   selectedDay?: XDate;
   topDay?: XDate;
@@ -114,7 +114,7 @@ class ReservationList extends Component<ReservationListProps, State> {
     if (this.props.topDay && prevProps.topDay && prevProps !== this.props) {
       if (!sameDate(prevProps.topDay, this.props.topDay)) {
         this.setState({reservations: []},
-          () => this.updateReservations(this.props)
+            () => this.updateReservations(this.props)
         );
       } else {
         this.updateReservations(this.props);
@@ -254,9 +254,9 @@ class ReservationList extends Component<ReservationListProps, State> {
     const reservationProps = extractReservationProps(this.props);
 
     return (
-      <View onLayout={this.onRowLayoutChange.bind(this, index)}>
-        <Reservation {...reservationProps} item={item.reservation} date={item.date}/>
-      </View>
+        <View onLayout={this.onRowLayoutChange.bind(this, index)}>
+          <Reservation {...reservationProps} item={item.reservation} date={item.date}/>
+        </View>
     );
   };
 
@@ -267,20 +267,34 @@ class ReservationList extends Component<ReservationListProps, State> {
   }
 
   _onRefresh = () => {
-    let h = 0;
-    let scrollPosition = 0;
-    const selectedDay = this.props.selectedDay?.clone();
-    const iterator = parseDate((this.props.selectedDay?.clone()?.getTime()??0)-3600*24*10*1000);
+    const iterator = parseDate((this.props.selectedDay?.clone()?.getTime()??0)-3600*24*40*1000);
     let reservations: DayAgenda[] = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 40; i++) {
       const res = this.getReservationsForDay(iterator, this.props);
       if (res) {
         reservations = reservations.concat(res);
       }
       iterator.addDays(1);
     }
-    scrollPosition = reservations.length;
-    for (let i = 10; i < 30; i++) {
+    const selectedDate = this.state.reservations[0].date
+    this.setState({
+      reservations:[...reservations,...this.state.reservations]
+    }, () => {
+      setTimeout(() => {
+        this.list.current?.scrollToIndex({animated: false, index: 40});
+        console.log(selectedDate)
+        this.props.onDayChange?.(selectedDate.clone());
+      }, 100);
+    });
+  }
+
+  _loadMore= () => {
+    if (this.state.reservations.length==0) return
+    const lastReservation = this.state.reservations[this.state.reservations.length-1]
+    const iterator = parseDate((lastReservation.date.clone()?.getTime()??0)+3600*24*1*1000);
+    let reservations: DayAgenda[] = [];
+
+    for (let i = 0; i < 40; i++) {
       const res = this.getReservationsForDay(iterator, this.props);
       if (res) {
         reservations = reservations.concat(res);
@@ -288,11 +302,9 @@ class ReservationList extends Component<ReservationListProps, State> {
       iterator.addDays(1);
     }
     this.setState({
-      reservations
+      reservations:[...this.state.reservations,...reservations]
     }, () => {
       setTimeout(() => {
-        this.list?.current?.scrollToOffset({offset: scrollPosition, animated: true});
-        this.props.onDayChange?.(selectedDay);
       }, 100);
     });
   }
@@ -308,24 +320,26 @@ class ReservationList extends Component<ReservationListProps, State> {
     }
 
     return (
-      <FlashList
-        ref={this.list}
-        style={style}
-        contentContainerStyle={this.style.content}
-        data={this.state.reservations}
-        renderItem={this.renderRow}
-        showsVerticalScrollIndicator={false}
-        estimatedItemSize={this.props.estimatedItemSize}
-        onMoveShouldSetResponderCapture={this.onMoveShouldSetResponderCapture}
-        onScroll={this.onScroll}
-        refreshControl={this.props.refreshControl}
-        refreshing={this.props.refreshing}
-        onRefresh={this._onRefresh}
-        onScrollBeginDrag={this.props.onScrollBeginDrag}
-        onScrollEndDrag={this.props.onScrollEndDrag}
-        onMomentumScrollBegin={this.props.onMomentumScrollBegin}
-        onMomentumScrollEnd={this.props.onMomentumScrollEnd}
-      />
+        <FlashList
+            ref={this.list}
+            style={style}
+            contentContainerStyle={this.style.content}
+            data={this.state.reservations}
+            renderItem={this.renderRow}
+            showsVerticalScrollIndicator={false}
+            estimatedItemSize={83}
+            onMoveShouldSetResponderCapture={this.onMoveShouldSetResponderCapture}
+            onScroll={this.onScroll}
+            refreshControl={this.props.refreshControl}
+            refreshing={this.props.refreshing}
+            onRefresh={this._onRefresh}
+            onEndReachedThreshold={0.5}
+            onEndReached={this._loadMore}
+            onScrollBeginDrag={this.props.onScrollBeginDrag}
+            onScrollEndDrag={this.props.onScrollEndDrag}
+            onMomentumScrollBegin={this.props.onMomentumScrollBegin}
+            onMomentumScrollEnd={this.props.onMomentumScrollEnd}
+        />
     );
   }
 }
