@@ -282,8 +282,7 @@ class ReservationList extends Component<ReservationListProps, State> {
     }, () => {
       setTimeout(() => {
         this.list.current?.scrollToIndex({animated: false, index: 40});
-        console.log(selectedDate)
-        this.props.onDayChange?.(selectedDate.clone());
+        this.props.onDayChange?.(selectedDate?.clone());
       }, 100);
     });
   }
@@ -291,7 +290,7 @@ class ReservationList extends Component<ReservationListProps, State> {
   _loadMore= () => {
     if (this.state.reservations.length==0) return
     const lastReservation = this.state.reservations[this.state.reservations.length-1]
-    const iterator = parseDate((lastReservation.date.clone()?.getTime()??0)+3600*24*1*1000);
+    const iterator = parseDate((lastReservation?.date?.clone()?.getTime()??0)+3600*24*1*1000);
     let reservations: DayAgenda[] = [];
 
     for (let i = 0; i < 40; i++) {
